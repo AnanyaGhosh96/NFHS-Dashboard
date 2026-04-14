@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NFHS-5 India · Health Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --ink:    #0f1923;
+  --ink2:   #1e2d3d;
+  --ink3:   #2c3e50;
+  --paper:  #f8f5ef;
+  --paper2: #f0ebe1;
+  --paper3: #e8e0d2;
+  --gold:   #c8922a;
+  --gold2:  #e8b04a;
+  --teal:   #1a7a6e;
+  --teal2:  #2fb8a6;
+  --coral:  #c94f3a;
+  --coral2: #e86f58;
+  --slate:  #4a6580;
+  --indigo: #3d5a9e;
+  --text:   #0f1923;
+  --text2:  #3a4a5a;
+  --text3:  #6b7b8d;
+  --border: rgba(15,25,35,0.1);
+  --border2:rgba(15,25,35,0.18);
+  --shadow: 0 4px 24px rgba(15,25,35,0.08);
+  --shadow2:0 8px 40px rgba(15,25,35,0.14);
+  --r: 14px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--paper);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── GRAIN TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ── HEADER ── */
+header {
+  background: var(--ink);
+  color: #f8f5ef;
+  padding: 28px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+}
+header::after {
+  content: '';
+  position: absolute;
+  right: -60px; top: -60px;
+  width: 280px; height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,146,42,0.18) 0%, transparent 70%);
+  pointer-events: none;
+}
+.header-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  color: #f8f5ef;
+}
+.header-title span { color: var(--gold2); }
+.header-sub {
+  font-size: 14px;
+  color: rgba(248,245,239,0.55);
+  margin-top: 5px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+}
+.header-right { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.badge {
+  background: rgba(200,146,42,0.18);
+  border: 1px solid rgba(200,146,42,0.4);
+  color: var(--gold2);
+  border-radius: 30px;
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── CONTROL BAR ── */
+.control-bar {
+  background: var(--ink2);
+  padding: 18px 40px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+.control-label {
+  font-size: 13px;
+  color: rgba(248,245,239,0.5);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ind-select {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 10px;
+  padding: 10px 40px 10px 16px;
+  color: #f8f5ef;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='rgba(248,245,239,0.5)' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  min-width: 280px;
+  transition: border-color .2s, background-color .2s;
+}
+.ind-select:focus { border-color: var(--gold2); background-color: rgba(255,255,255,0.11); }
+.ind-select option { background: var(--ink2); color: #f8f5ef; }
+
+/* ── STAT STRIP ── */
+.stat-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  background: var(--ink3);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.stat-item {
+  padding: 18px 28px;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  position: relative;
+  transition: background .15s;
+}
+.stat-item:last-child { border-right: none; }
+.stat-item:hover { background: rgba(255,255,255,0.03); }
+.stat-item-label {
+  font-size: 12px;
+  color: rgba(248,245,239,0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.stat-item-val {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f8f5ef;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+}
+.stat-item-sub {
+  font-size: 13px;
+  color: rgba(248,245,239,0.45);
+  margin-top: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stat-accent { display: block; width: 28px; height: 3px; border-radius: 2px; margin-bottom: 10px; }
+
+/* ── MAIN GRID ── */
+.main {
+  padding: 32px 40px;
+  position: relative;
+  z-index: 1;
+}
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 24px;
+}
+/* Chart layout:
+   [bar]        [line]
+   [column]     [scatter]
+   [pie — full width]
+*/
+.card-bar     { grid-column: 1; grid-row: 1; }
+.card-line    { grid-column: 2; grid-row: 1; }
+.card-column  { grid-column: 1; grid-row: 2; }
+.card-scatter { grid-column: 2; grid-row: 2; }
+.card-pie     { grid-column: 1 / -1; grid-row: 3; }
+
+/* ── CHART CARD ── */
+.chart-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: box-shadow .25s, transform .25s;
+  display: flex;
+  flex-direction: column;
+}
+.chart-card:hover {
+  box-shadow: var(--shadow2);
+  transform: translateY(-2px);
+}
+.card-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.card-subtitle {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 3px;
+  font-weight: 400;
+}
+.card-type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-bar     { background: rgba(61,90,158,0.1);  color: var(--indigo); border: 1px solid rgba(61,90,158,0.2); }
+.badge-line    { background: rgba(26,122,110,0.1);  color: var(--teal);   border: 1px solid rgba(26,122,110,0.2); }
+.badge-column  { background: rgba(200,146,42,0.1);  color: var(--gold);   border: 1px solid rgba(200,146,42,0.2); }
+.badge-scatter { background: rgba(201,79,58,0.1);   color: var(--coral);  border: 1px solid rgba(201,79,58,0.2); }
+.badge-pie     { background: rgba(74,101,128,0.1);  color: var(--slate);  border: 1px solid rgba(74,101,128,0.2); }
+
+.card-body {
+  padding: 20px 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── CHART HEIGHTS ── */
+.chart-wrap { position: relative; }
+.h-340 { height: 340px; }
+.h-280 { height: 280px; }
+.h-420 { height: 420px; }
+
+/* ── PIE LAYOUT ── */
+.pie-layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 32px;
+  align-items: center;
+}
+.pie-wrap { position: relative; height: 340px; }
+.pie-legend { display: flex; flex-direction: column; gap: 10px; }
+.pie-leg-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--paper2);
+  border: 1px solid var(--border);
+  transition: background .15s;
+  cursor: default;
+}
+.pie-leg-item:hover { background: var(--paper3); }
+.pie-leg-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.pie-leg-name { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+.pie-leg-val  { font-size: 14px; font-weight: 700; color: var(--text); font-family: 'JetBrains Mono', monospace; }
+.pie-leg-pct  { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; width: 44px; text-align: right; }
+
+/* ── SCATTER AXIS PICKERS ── */
+.scatter-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.axis-sel {
+  flex: 1;
+  min-width: 130px;
+  background: var(--paper2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  cursor: pointer;
+}
+.axis-sel:focus { border-color: var(--coral); }
+.axis-lbl { font-size: 13px; color: var(--text3); font-weight: 500; white-space: nowrap; }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--ink);
+  color: rgba(248,245,239,0.4);
+  text-align: center;
+  padding: 20px 40px;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  position: relative;
+  z-index: 1;
+}
+footer a { color: var(--gold2); text-decoration: none; }
+
+/* ── ANIMATION ── */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+.chart-card { animation: cardIn .4s ease both; }
+.chart-card:nth-child(1) { animation-delay: .05s; }
+.chart-card:nth-child(2) { animation-delay: .12s; }
+.chart-card:nth-child(3) { animation-delay: .19s; }
+.chart-card:nth-child(4) { animation-delay: .26s; }
+.chart-card:nth-child(5) { animation-delay: .33s; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  header { padding: 20px 22px; }
+  .header-title { font-size: 24px; }
+  .control-bar { padding: 14px 22px; }
+  .stat-strip { grid-template-columns: repeat(2,1fr); }
+  .main { padding: 20px 22px; }
+  .chart-grid { grid-template-columns: 1fr; }
+  .card-bar,.card-line,.card-column,.card-scatter,.card-pie { grid-column: 1; grid-row: auto; }
+  .pie-layout { grid-template-columns: 1fr; }
+  .pie-wrap { height: 260px; }
+  .ind-select { min-width: 220px; }
+}
+@media (max-width: 540px) {
+  .stat-strip { grid-template-columns: 1fr 1fr; }
+  .stat-item-val { font-size: 22px; }
+  .header-title { font-size: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div>
+    <div class="header-title">NFHS<span>-5</span> India</div>
+    <div class="header-sub">National Family Health Survey · 2019–21 · 36 States &amp; UTs · 14 Indicators</div>
+  </div>
+  <div class="header-right">
+    <div class="badge">&#x25CF;&nbsp; Live Dashboard</div>
+  </div>
+</header>
+
+<!-- CONTROL BAR -->
+<div class="control-bar">
+  <span class="control-label">Indicator</span>
+  <select class="ind-select" id="ind-select" onchange="onIndicatorChange()">
+    <optgroup label="Child Health">
+      <option value="Child Stunting %">Child Stunting</option>
+      <option value="Child Underweight %">Child Underweight</option>
+      <option value="Full Vaccination %">Full Vaccination (12–23 months)</option>
+    </optgroup>
+    <optgroup label="Maternal Health">
+      <option value="Institutional Births %">Institutional Births</option>
+      <option value="Women Anaemia %">Women Anaemia</option>
+    </optgroup>
+    <optgroup label="Demography">
+      <option value="TFR">Total Fertility Rate (TFR)</option>
+      <option value="Child Marriage %">Child Marriage</option>
+    </optgroup>
+    <optgroup label="Women Empowerment">
+      <option value="Women Literacy %">Women Literacy</option>
+      <option value="Women Internet Use %">Women Internet Use</option>
+      <option value="Women Bank Account %">Women Bank Account Ownership</option>
+      <option value="Spousal Violence %">Spousal Violence</option>
+    </optgroup>
+    <optgroup label="Infrastructure">
+      <option value="Electricity Access %">Electricity Access</option>
+      <option value="Sanitation Access %">Sanitation Access</option>
+      <option value="Clean Fuel %">Clean Fuel for Cooking</option>
+    </optgroup>
+  </select>
+  <span id="ind-direction" style="font-size:13px;color:rgba(248,245,239,0.45);font-weight:400;"></span>
+</div>
+
+<!-- STAT STRIP -->
+<div class="stat-strip">
+  <div class="stat-item">
+    <span class="stat-accent" style="background:var(--gold2);"></span>
+    <div class="stat-item-label">India average</div>
+    <div class="stat-item-val" id="stat-india">—</div>
+    <div class="stat-item-sub">National total</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-accent" style="background:#3fb950;"></span>
+    <div class="stat-item-label">Best performing</div>
+    <div class="stat-item-val" id="stat-best">—</div>
+    <div class="stat-item-sub" id="stat-best-st">—</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-accent" style="background:#f85149;"></span>
+    <div class="stat-item-label">Needs attention</div>
+    <div class="stat-item-val" id="stat-worst">—</div>
+    <div class="stat-item-sub" id="stat-worst-st">—</div>
+  </div>
+  <div class="stat-item">
+    <span class="stat-accent" style="background:#58a6ff;"></span>
+    <div class="stat-item-label">Urban–Rural gap</div>
+    <div class="stat-item-val" id="stat-gap">—</div>
+    <div class="stat-item-sub">Percentage points</div>
+  </div>
+</div>
+
+<!-- MAIN CHARTS -->
+<div class="main">
+  <div class="chart-grid">
+
+    <!-- 1. HORIZONTAL BAR -->
+    <div class="chart-card card-bar">
+      <div class="card-header">
+        <div>
+          <div class="card-title">State Rankings</div>
+          <div class="card-subtitle" id="bar-sub">All states sorted by value</div>
+        </div>
+        <span class="card-type-badge badge-bar">Bar chart</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap h-340"><canvas id="barChart" role="img" aria-label="Horizontal bar chart of all states"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 2. LINE CHART -->
+    <div class="chart-card card-line">
+      <div class="card-header">
+        <div>
+          <div class="card-title">State Trend Profile</div>
+          <div class="card-subtitle">Top 12 states — sorted ascending</div>
+        </div>
+        <span class="card-type-badge badge-line">Line chart</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap h-340"><canvas id="lineChart" role="img" aria-label="Line chart of top states trend profile"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 3. COLUMN CHART -->
+    <div class="chart-card card-column">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Urban vs Rural</div>
+          <div class="card-subtitle">India national · by area type</div>
+        </div>
+        <span class="card-type-badge badge-column">Column chart</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrap h-280"><canvas id="columnChart" role="img" aria-label="Column chart urban rural comparison"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 4. SCATTER -->
+    <div class="chart-card card-scatter">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Correlation Explorer</div>
+          <div class="card-subtitle">Compare any two indicators</div>
+        </div>
+        <span class="card-type-badge badge-scatter">Scatter plot</span>
+      </div>
+      <div class="card-body">
+        <div class="scatter-controls">
+          <span class="axis-lbl">X:</span>
+          <select class="axis-sel" id="sc-x" onchange="buildScatter()"></select>
+          <span class="axis-lbl">Y:</span>
+          <select class="axis-sel" id="sc-y" onchange="buildScatter()"></select>
+        </div>
+        <div class="chart-wrap h-280"><canvas id="scatterChart" role="img" aria-label="Scatter plot correlation"></canvas></div>
+      </div>
+    </div>
+
+    <!-- 5. PIE CHART (full width) -->
+    <div class="chart-card card-pie">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Distribution by Performance Tier</div>
+          <div class="card-subtitle">States grouped into Best · Mid · Needs Attention</div>
+        </div>
+        <span class="card-type-badge badge-pie">Pie chart</span>
+      </div>
+      <div class="card-body">
+        <div class="pie-layout">
+          <div class="pie-wrap"><canvas id="pieChart" role="img" aria-label="Pie chart of state performance tiers"></canvas></div>
+          <div class="pie-legend" id="pie-legend"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  Data: National Family Health Survey–5 (NFHS-5), 2019–21 · Ministry of Health &amp; Family Welfare, Govt. of India ·
+  <a href="http://rchiips.org/nfhs/nfhs5.shtml" target="_blank">rchiips.org/nfhs</a>
+</footer>
+
+<script>
+/* ═══════════════════════════════ DATA ═══════════════════════════════ */
+const STATES=[{state:"Andaman & Nicobar Islands",TFR:1.28,"Child Stunting %":22.47,"Child Underweight %":23.65,"Institutional Births %":98.95,"Women Literacy %":85.97,"Electricity Access %":97.58,"Sanitation Access %":87.97,"Clean Fuel %":79.77,"Women Bank Account %":89.21,"Full Vaccination %":77.78,"Women Anaemia %":57.55,"Women Internet Use %":34.79,"Spousal Violence %":17.21,"Child Marriage %":16.21},{state:"Andhra Pradesh",TFR:1.68,"Child Stunting %":31.16,"Child Underweight %":29.63,"Institutional Births %":96.51,"Women Literacy %":68.64,"Electricity Access %":99.45,"Sanitation Access %":77.26,"Clean Fuel %":83.62,"Women Bank Account %":81.78,"Full Vaccination %":73.02,"Women Anaemia %":58.99,"Women Internet Use %":20.97,"Spousal Violence %":30.01,"Child Marriage %":29.34},{state:"Arunachal Pradesh",TFR:1.8,"Child Stunting %":27.98,"Child Underweight %":15.41,"Institutional Births %":79.18,"Women Literacy %":73.78,"Electricity Access %":94.8,"Sanitation Access %":82.88,"Clean Fuel %":53.19,"Women Bank Account %":78.24,"Full Vaccination %":64.87,"Women Anaemia %":40.82,"Women Internet Use %":52.92,"Spousal Violence %":24.78,"Child Marriage %":18.88},{state:"Assam",TFR:1.87,"Child Stunting %":35.29,"Child Underweight %":32.78,"Institutional Births %":84.09,"Women Literacy %":77.2,"Electricity Access %":92.57,"Sanitation Access %":68.55,"Clean Fuel %":42.13,"Women Bank Account %":78.49,"Full Vaccination %":66.44,"Women Anaemia %":66.35,"Women Internet Use %":28.21,"Spousal Violence %":31.98,"Child Marriage %":31.82},{state:"Bihar",TFR:2.98,"Child Stunting %":42.94,"Child Underweight %":41.03,"Institutional Births %":76.2,"Women Literacy %":57.78,"Electricity Access %":96.26,"Sanitation Access %":49.4,"Clean Fuel %":37.79,"Women Bank Account %":76.7,"Full Vaccination %":70.96,"Women Anaemia %":63.55,"Women Internet Use %":20.6,"Spousal Violence %":39.98,"Child Marriage %":40.8},{state:"Chandigarh",TFR:1.4,"Child Stunting %":25.3,"Child Underweight %":20.56,"Institutional Births %":96.87,"Women Literacy %":82.96,"Electricity Access %":99.85,"Sanitation Access %":84.98,"Clean Fuel %":95.81,"Women Bank Account %":87.1,"Full Vaccination %":null,"Women Anaemia %":60.09,"Women Internet Use %":75.2,"Spousal Violence %":9.67,"Child Marriage %":9.72},{state:"Chhattisgarh",TFR:1.82,"Child Stunting %":34.6,"Child Underweight %":31.33,"Institutional Births %":85.72,"Women Literacy %":74.62,"Electricity Access %":98.79,"Sanitation Access %":76.76,"Clean Fuel %":33.0,"Women Bank Account %":80.34,"Full Vaccination %":79.74,"Women Anaemia %":61.17,"Women Internet Use %":26.69,"Spousal Violence %":20.23,"Child Marriage %":12.04},{state:"Dadra & NH / DD",TFR:1.84,"Child Stunting %":39.42,"Child Underweight %":38.7,"Institutional Births %":96.52,"Women Literacy %":77.26,"Electricity Access %":99.66,"Sanitation Access %":65.76,"Clean Fuel %":79.94,"Women Bank Account %":83.62,"Full Vaccination %":94.88,"Women Anaemia %":62.58,"Women Internet Use %":36.7,"Spousal Violence %":16.81,"Child Marriage %":26.41},{state:"Goa",TFR:1.3,"Child Stunting %":25.77,"Child Underweight %":24.0,"Institutional Births %":99.73,"Women Literacy %":92.96,"Electricity Access %":100.0,"Sanitation Access %":87.92,"Clean Fuel %":96.5,"Women Bank Account %":88.34,"Full Vaccination %":81.94,"Women Anaemia %":38.9,"Women Internet Use %":73.69,"Spousal Violence %":8.26,"Child Marriage %":5.83},{state:"Gujarat",TFR:1.86,"Child Stunting %":39.02,"Child Underweight %":39.68,"Institutional Births %":94.25,"Women Literacy %":76.45,"Electricity Access %":97.55,"Sanitation Access %":74.02,"Clean Fuel %":66.85,"Women Bank Account %":70.03,"Full Vaccination %":76.34,"Women Anaemia %":65.06,"Women Internet Use %":30.8,"Spousal Violence %":14.02,"Child Marriage %":21.78},{state:"Haryana",TFR:1.91,"Child Stunting %":27.49,"Child Underweight %":21.45,"Institutional Births %":94.91,"Women Literacy %":81.67,"Electricity Access %":99.62,"Sanitation Access %":85.03,"Clean Fuel %":59.51,"Women Bank Account %":73.63,"Full Vaccination %":76.89,"Women Anaemia %":60.57,"Women Internet Use %":48.39,"Spousal Violence %":18.15,"Child Marriage %":12.46},{state:"Himachal Pradesh",TFR:1.66,"Child Stunting %":30.84,"Child Underweight %":25.5,"Institutional Births %":88.2,"Women Literacy %":91.73,"Electricity Access %":99.47,"Sanitation Access %":81.75,"Clean Fuel %":51.73,"Women Bank Account %":83.09,"Full Vaccination %":89.25,"Women Anaemia %":53.35,"Women Internet Use %":49.67,"Spousal Violence %":8.31,"Child Marriage %":5.4},{state:"Jammu & Kashmir",TFR:1.41,"Child Stunting %":26.86,"Child Underweight %":20.97,"Institutional Births %":92.39,"Women Literacy %":77.27,"Electricity Access %":99.26,"Sanitation Access %":75.73,"Clean Fuel %":69.19,"Women Bank Account %":84.89,"Full Vaccination %":86.22,"Women Anaemia %":67.25,"Women Internet Use %":43.34,"Spousal Violence %":9.6,"Child Marriage %":4.46},{state:"Jharkhand",TFR:2.26,"Child Stunting %":39.58,"Child Underweight %":39.4,"Institutional Births %":75.76,"Women Literacy %":65.01,"Electricity Access %":94.34,"Sanitation Access %":56.65,"Clean Fuel %":31.89,"Women Bank Account %":79.62,"Full Vaccination %":73.91,"Women Anaemia %":65.67,"Women Internet Use %":31.44,"Spousal Violence %":31.47,"Child Marriage %":32.21},{state:"Karnataka",TFR:1.67,"Child Stunting %":35.43,"Child Underweight %":32.94,"Institutional Births %":96.96,"Women Literacy %":76.69,"Electricity Access %":99.12,"Sanitation Access %":74.78,"Clean Fuel %":79.73,"Women Bank Account %":88.69,"Full Vaccination %":84.08,"Women Anaemia %":47.83,"Women Internet Use %":34.98,"Spousal Violence %":44.44,"Child Marriage %":21.25},{state:"Kerala",TFR:1.79,"Child Stunting %":23.41,"Child Underweight %":19.67,"Institutional Births %":99.76,"Women Literacy %":98.27,"Electricity Access %":99.61,"Sanitation Access %":98.71,"Clean Fuel %":72.07,"Women Bank Account %":78.53,"Full Vaccination %":77.83,"Women Anaemia %":36.51,"Women Internet Use %":61.11,"Spousal Violence %":9.9,"Child Marriage %":6.29},{state:"Ladakh",TFR:1.31,"Child Stunting %":30.53,"Child Underweight %":20.36,"Institutional Births %":95.06,"Women Literacy %":76.8,"Electricity Access %":99.46,"Sanitation Access %":42.32,"Clean Fuel %":76.26,"Women Bank Account %":88.38,"Full Vaccination %":88.22,"Women Anaemia %":93.67,"Women Internet Use %":56.39,"Spousal Violence %":18.11,"Child Marriage %":2.46},{state:"Lakshadweep",TFR:1.42,"Child Stunting %":32.02,"Child Underweight %":25.78,"Institutional Births %":99.61,"Women Literacy %":96.5,"Electricity Access %":99.78,"Sanitation Access %":99.8,"Clean Fuel %":59.43,"Women Bank Account %":66.9,"Full Vaccination %":null,"Women Anaemia %":25.98,"Women Internet Use %":56.35,"Spousal Violence %":1.33,"Child Marriage %":1.32},{state:"Madhya Pradesh",TFR:1.99,"Child Stunting %":35.67,"Child Underweight %":33.0,"Institutional Births %":90.7,"Women Literacy %":68.85,"Electricity Access %":98.41,"Sanitation Access %":65.07,"Clean Fuel %":40.05,"Women Bank Account %":74.68,"Full Vaccination %":77.1,"Women Anaemia %":54.73,"Women Internet Use %":26.91,"Spousal Violence %":28.13,"Child Marriage %":23.11},{state:"Maharashtra",TFR:1.71,"Child Stunting %":35.24,"Child Underweight %":36.12,"Institutional Births %":94.67,"Women Literacy %":84.58,"Electricity Access %":97.81,"Sanitation Access %":72.02,"Clean Fuel %":79.72,"Women Bank Account %":72.81,"Full Vaccination %":73.46,"Women Anaemia %":54.53,"Women Internet Use %":38.04,"Spousal Violence %":25.22,"Child Marriage %":21.89},{state:"Manipur",TFR:2.17,"Child Stunting %":23.43,"Child Underweight %":13.32,"Institutional Births %":79.89,"Women Literacy %":87.62,"Electricity Access %":98.08,"Sanitation Access %":64.85,"Clean Fuel %":70.43,"Women Bank Account %":74.03,"Full Vaccination %":68.83,"Women Anaemia %":29.3,"Women Internet Use %":44.76,"Spousal Violence %":39.63,"Child Marriage %":16.32},{state:"Meghalaya",TFR:2.91,"Child Stunting %":46.54,"Child Underweight %":26.64,"Institutional Births %":58.06,"Women Literacy %":88.17,"Electricity Access %":91.94,"Sanitation Access %":82.88,"Clean Fuel %":33.68,"Women Bank Account %":70.44,"Full Vaccination %":63.8,"Women Anaemia %":54.41,"Women Internet Use %":34.72,"Spousal Violence %":16.0,"Child Marriage %":16.89},{state:"Mizoram",TFR:1.87,"Child Stunting %":28.86,"Child Underweight %":12.66,"Institutional Births %":85.77,"Women Literacy %":94.35,"Electricity Access %":98.16,"Sanitation Access %":95.33,"Clean Fuel %":83.77,"Women Bank Account %":80.7,"Full Vaccination %":72.52,"Women Anaemia %":34.8,"Women Internet Use %":67.58,"Spousal Violence %":10.85,"Child Marriage %":7.95},{state:"Nagaland",TFR:1.72,"Child Stunting %":32.71,"Child Underweight %":26.88,"Institutional Births %":45.67,"Women Literacy %":85.8,"Electricity Access %":98.55,"Sanitation Access %":87.72,"Clean Fuel %":43.0,"Women Bank Account %":63.68,"Full Vaccination %":57.88,"Women Anaemia %":29.29,"Women Internet Use %":49.91,"Spousal Violence %":6.4,"Child Marriage %":5.6},{state:"Delhi",TFR:1.62,"Child Stunting %":30.87,"Child Underweight %":21.82,"Institutional Births %":91.77,"Women Literacy %":85.02,"Electricity Access %":99.87,"Sanitation Access %":81.12,"Clean Fuel %":98.94,"Women Bank Account %":72.45,"Full Vaccination %":75.99,"Women Anaemia %":50.15,"Women Internet Use %":63.8,"Spousal Violence %":22.59,"Child Marriage %":9.87},{state:"Odisha",TFR:1.82,"Child Stunting %":31.01,"Child Underweight %":29.69,"Institutional Births %":92.2,"Women Literacy %":71.92,"Electricity Access %":97.01,"Sanitation Access %":60.47,"Clean Fuel %":34.74,"Women Bank Account %":86.5,"Full Vaccination %":90.46,"Women Anaemia %":64.36,"Women Internet Use %":24.9,"Spousal Violence %":30.61,"Child Marriage %":20.49},{state:"Puducherry",TFR:1.49,"Child Stunting %":19.98,"Child Underweight %":15.29,"Institutional Births %":99.57,"Women Literacy %":91.14,"Electricity Access %":99.87,"Sanitation Access %":84.93,"Clean Fuel %":92.34,"Women Bank Account %":92.62,"Full Vaccination %":82.0,"Women Anaemia %":55.54,"Women Internet Use %":61.94,"Spousal Violence %":30.51,"Child Marriage %":6.48},{state:"Punjab",TFR:1.63,"Child Stunting %":24.49,"Child Underweight %":16.92,"Institutional Births %":94.3,"Women Literacy %":81.4,"Electricity Access %":99.68,"Sanitation Access %":86.63,"Clean Fuel %":76.66,"Women Bank Account %":81.62,"Full Vaccination %":76.2,"Women Anaemia %":58.84,"Women Internet Use %":54.81,"Spousal Violence %":11.64,"Child Marriage %":8.71},{state:"Rajasthan",TFR:2.01,"Child Stunting %":31.78,"Child Underweight %":27.61,"Institutional Births %":94.88,"Women Literacy %":66.37,"Electricity Access %":98.14,"Sanitation Access %":71.07,"Clean Fuel %":41.38,"Women Bank Account %":79.64,"Full Vaccination %":80.41,"Women Anaemia %":54.67,"Women Internet Use %":36.88,"Spousal Violence %":24.3,"Child Marriage %":25.4},{state:"Sikkim",TFR:1.05,"Child Stunting %":22.33,"Child Underweight %":13.13,"Institutional Births %":94.73,"Women Literacy %":88.92,"Electricity Access %":99.29,"Sanitation Access %":87.26,"Clean Fuel %":78.4,"Women Bank Account %":76.41,"Full Vaccination %":80.57,"Women Anaemia %":42.07,"Women Internet Use %":76.71,"Spousal Violence %":12.14,"Child Marriage %":10.75},{state:"Tamil Nadu",TFR:1.76,"Child Stunting %":25.04,"Child Underweight %":21.96,"Institutional Births %":99.59,"Women Literacy %":85.89,"Electricity Access %":99.34,"Sanitation Access %":72.62,"Clean Fuel %":82.87,"Women Bank Account %":92.17,"Full Vaccination %":89.2,"Women Anaemia %":53.56,"Women Internet Use %":46.92,"Spousal Violence %":38.05,"Child Marriage %":12.83},{state:"Telangana",TFR:1.75,"Child Stunting %":33.12,"Child Underweight %":31.82,"Institutional Births %":97.01,"Women Literacy %":66.64,"Electricity Access %":99.59,"Sanitation Access %":76.24,"Clean Fuel %":91.76,"Women Bank Account %":84.36,"Full Vaccination %":79.06,"Women Anaemia %":57.77,"Women Internet Use %":26.49,"Spousal Violence %":36.91,"Child Marriage %":23.46},{state:"Tripura",TFR:1.7,"Child Stunting %":32.3,"Child Underweight %":25.6,"Institutional Births %":89.15,"Women Literacy %":80.61,"Electricity Access %":98.19,"Sanitation Access %":73.57,"Clean Fuel %":45.34,"Women Bank Account %":76.9,"Full Vaccination %":69.53,"Women Anaemia %":67.36,"Women Internet Use %":22.93,"Spousal Violence %":20.65,"Child Marriage %":40.06},{state:"Uttar Pradesh",TFR:2.35,"Child Stunting %":39.71,"Child Underweight %":32.14,"Institutional Births %":83.4,"Women Literacy %":68.83,"Electricity Access %":91.04,"Sanitation Access %":68.75,"Clean Fuel %":49.52,"Women Bank Account %":75.43,"Full Vaccination %":69.62,"Women Anaemia %":50.62,"Women Internet Use %":30.58,"Spousal Violence %":34.82,"Child Marriage %":15.84},{state:"Uttarakhand",TFR:1.85,"Child Stunting %":27.04,"Child Underweight %":20.95,"Institutional Births %":83.24,"Women Literacy %":81.57,"Electricity Access %":99.59,"Sanitation Access %":78.75,"Clean Fuel %":59.17,"Women Bank Account %":80.21,"Full Vaccination %":80.77,"Women Anaemia %":42.42,"Women Internet Use %":45.12,"Spousal Violence %":15.12,"Child Marriage %":9.83},{state:"West Bengal",TFR:1.64,"Child Stunting %":33.78,"Child Underweight %":32.21,"Institutional Births %":91.74,"Women Literacy %":76.06,"Electricity Access %":97.49,"Sanitation Access %":68.03,"Clean Fuel %":40.22,"Women Bank Account %":76.49,"Full Vaccination %":87.81,"Women Anaemia %":71.68,"Women Internet Use %":25.46,"Spousal Violence %":26.97,"Child Marriage %":41.64}];
+
+const INDIA={Urban:{TFR:1.63,"Child Stunting %":30.12,"Child Underweight %":27.34,"Institutional Births %":93.79,"Women Literacy %":83.01,"Electricity Access %":99.05,"Sanitation Access %":81.47,"Clean Fuel %":89.65,"Women Bank Account %":80.93,"Full Vaccination %":75.47,"Women Anaemia %":54.06,"Women Internet Use %":51.78,"Spousal Violence %":24.19,"Child Marriage %":14.69},Rural:{TFR:2.14,"Child Stunting %":37.34,"Child Underweight %":33.78,"Institutional Births %":86.71,"Women Literacy %":65.9,"Electricity Access %":95.7,"Sanitation Access %":64.9,"Clean Fuel %":43.21,"Women Bank Account %":77.43,"Full Vaccination %":76.79,"Women Anaemia %":58.69,"Women Internet Use %":24.56,"Spousal Violence %":31.63,"Child Marriage %":27.02},Total:{TFR:1.99,"Child Stunting %":35.47,"Child Underweight %":32.11,"Institutional Births %":88.59,"Women Literacy %":71.46,"Electricity Access %":96.77,"Sanitation Access %":70.17,"Clean Fuel %":58.62,"Women Bank Account %":78.56,"Full Vaccination %":76.44,"Women Anaemia %":57.22,"Women Internet Use %":33.34,"Spousal Violence %":29.31,"Child Marriage %":23.25}};
+
+const LOWER_BETTER = new Set(["Child Stunting %","Child Underweight %","TFR","Women Anaemia %","Spousal Violence %","Child Marriage %"]);
+const IS_RATE = new Set(["TFR"]);
+const ALL_INDS = ["Child Stunting %","Child Underweight %","Full Vaccination %","Institutional Births %","Women Anaemia %","TFR","Child Marriage %","Women Literacy %","Women Internet Use %","Women Bank Account %","Spousal Violence %","Electricity Access %","Sanitation Access %","Clean Fuel %"];
+
+// Palette for charts
+const PALETTE = ['#3d5a9e','#1a7a6e','#c8922a','#c94f3a','#4a6580','#7b3fa0','#2e8b57','#d2691e','#2f6fa8','#8b4513'];
+const PIE_COLORS = ['#3fb950','#d29922','#f85149'];
+
+let charts = {};
+let currentInd = "Child Stunting %";
+
+/* ══ HELPERS ══ */
+function fmt(v) {
+  if (v == null || (typeof v === 'number' && v <= 0 && IS_RATE.has(currentInd))) return "—";
+  if (IS_RATE.has(currentInd)) return (+v).toFixed(2);
+  return (+v).toFixed(1) + "%";
+}
+
+function getValid() {
+  return STATES.filter(s => s[currentInd] != null && s[currentInd] > 0);
+}
+
+function tierColor(v, mn, mx) {
+  const lb = LOWER_BETTER.has(currentInd);
+  const norm = (v - mn) / (mx - mn || 1);
+  const bad = lb ? norm : 1 - norm;
+  if (bad < 0.33) return '#3fb950';
+  if (bad < 0.66) return '#d29922';
+  return '#f85149';
+}
+
+function destroyAll() {
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+}
+
+/* ══ STAT STRIP ══ */
+function updateStats() {
+  const valid = getValid();
+  const vals = valid.map(s => s[currentInd]);
+  const lb = LOWER_BETTER.has(currentInd);
+  const sorted = [...vals].sort((a,b)=>a-b);
+  const best = lb ? sorted[0] : sorted[sorted.length-1];
+  const worst = lb ? sorted[sorted.length-1] : sorted[0];
+  const bestSt = valid.find(s=>s[currentInd]===best);
+  const worstSt = valid.find(s=>s[currentInd]===worst);
+  const gap = Math.abs(INDIA.Urban[currentInd] - INDIA.Rural[currentInd]);
+
+  document.getElementById('stat-india').textContent = fmt(INDIA.Total[currentInd]);
+  document.getElementById('stat-best').textContent = fmt(best);
+  document.getElementById('stat-best-st').textContent = bestSt?.state || '—';
+  document.getElementById('stat-worst').textContent = fmt(worst);
+  document.getElementById('stat-worst-st').textContent = worstSt?.state || '—';
+  document.getElementById('stat-gap').textContent = IS_RATE.has(currentInd) ? gap.toFixed(2) : gap.toFixed(1);
+
+  const dir = lb ? '↓ Lower is better' : '↑ Higher is better';
+  document.getElementById('ind-direction').textContent = dir;
+  document.getElementById('bar-sub').textContent = `All states · ${lb?'lowest = best':'highest = best'}`;
+}
+
+/* ══ 1. BAR CHART (horizontal) ══ */
+function buildBar() {
+  const valid = getValid().sort((a,b) => a[currentInd] - b[currentInd]);
+  const mn = valid[0][currentInd], mx = valid[valid.length-1][currentInd];
+  const colors = valid.map(s => tierColor(s[currentInd], mn, mx));
+  const h = Math.max(400, valid.length * 22 + 60);
+  document.getElementById('barChart').parentElement.style.height = h + 'px';
+
+  const ctx = document.getElementById('barChart');
+  charts.bar = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: valid.map(s => s.state),
+      datasets: [{
+        data: valid.map(s => s[currentInd]),
+        backgroundColor: colors,
+        borderWidth: 0,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '  ' + fmt(ctx.raw) },
+          backgroundColor: '#1e2d3d', titleColor: '#f8f5ef', bodyColor: '#c8d8e8',
+          padding: 10, cornerRadius: 8, bodyFont: { family: 'JetBrains Mono', size: 14 }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(15,25,35,0.06)' }, ticks: { color: '#6b7b8d', font: { size: 13, family: 'Outfit' } } },
+        y: { grid: { display: false }, ticks: { color: '#3a4a5a', font: { size: 12, family: 'Outfit' } } }
+      },
+      animation: { duration: 600, easing: 'easeOutQuart' }
+    }
+  });
+}
+
+/* ══ 2. LINE CHART ══ */
+function buildLine() {
+  const valid = getValid().sort((a,b) => a[currentInd] - b[currentInd]);
+  const top = valid.slice(0, 14);
+  const ctx = document.getElementById('lineChart');
+  charts.line = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: top.map(s => s.state.length > 12 ? s.state.substring(0,11)+'…' : s.state),
+      datasets: [{
+        label: currentInd,
+        data: top.map(s => s[currentInd]),
+        borderColor: '#3d5a9e',
+        backgroundColor: 'rgba(61,90,158,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: top.map(s => tierColor(s[currentInd], top[0][currentInd], top[top.length-1][currentInd])),
+        pointRadius: 6,
+        pointHoverRadius: 9,
+        pointBorderWidth: 0,
+        fill: true,
+        tension: 0.38,
+      },
+      {
+        label: 'India avg',
+        data: top.map(() => INDIA.Total[currentInd]),
+        borderColor: '#c8922a',
+        borderWidth: 1.8,
+        borderDash: [6, 4],
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { color: '#3a4a5a', font: { size: 13, family: 'Outfit' }, boxWidth: 14, padding: 16 } },
+        tooltip: { callbacks: { label: ctx => '  ' + ctx.dataset.label + ': ' + fmt(ctx.raw) },
+          backgroundColor: '#1e2d3d', titleColor: '#f8f5ef', bodyColor: '#c8d8e8', padding: 10, cornerRadius: 8
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#6b7b8d', font: { size: 11, family: 'Outfit' }, maxRotation: 35 } },
+        y: { grid: { color: 'rgba(15,25,35,0.06)' }, ticks: { color: '#6b7b8d', font: { size: 13, family: 'Outfit' } } }
+      },
+      animation: { duration: 600, easing: 'easeOutQuart' }
+    }
+  });
+}
+
+/* ══ 3. COLUMN CHART (vertical bar) ══ */
+function buildColumn() {
+  const u = INDIA.Urban[currentInd], r = INDIA.Rural[currentInd], t = INDIA.Total[currentInd];
+  const ctx = document.getElementById('columnChart');
+  charts.column = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Urban', 'Rural', 'Total'],
+      datasets: [{
+        data: [u, r, t],
+        backgroundColor: ['rgba(61,90,158,0.85)', 'rgba(26,122,110,0.85)', 'rgba(200,146,42,0.85)'],
+        borderRadius: 8,
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => '  ' + fmt(ctx.raw) },
+          backgroundColor: '#1e2d3d', titleColor: '#f8f5ef', bodyColor: '#c8d8e8', padding: 10, cornerRadius: 8,
+          bodyFont: { family: 'JetBrains Mono', size: 14 }
+        },
+        datalabels: { display: false }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#3a4a5a', font: { size: 16, family: 'Outfit', weight: '600' } }
+        },
+        y: {
+          grid: { color: 'rgba(15,25,35,0.06)' },
+          ticks: { color: '#6b7b8d', font: { size: 13, family: 'Outfit' } },
+          beginAtZero: true
+        }
+      },
+      animation: { duration: 600, easing: 'easeOutQuart' }
+    }
+  });
+}
+
+/* ══ 4. SCATTER ══ */
+function buildScatter() {
+  const xInd = document.getElementById('sc-x').value;
+  const yInd = document.getElementById('sc-y').value;
+  const pts = STATES.filter(s => s[xInd]!=null && s[xInd]>0 && s[yInd]!=null && s[yInd]>0)
+    .map(s => ({ x: s[xInd], y: s[yInd], label: s.state }));
+
+  if (charts.scatter) { try { charts.scatter.destroy(); } catch(e){} }
+  const ctx = document.getElementById('scatterChart');
+  charts.scatter = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: `${xInd} vs ${yInd}`,
+        data: pts,
+        backgroundColor: 'rgba(201,79,58,0.65)',
+        pointRadius: 7,
+        pointHoverRadius: 11,
+        pointBorderWidth: 0,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => ctx[0].raw.label,
+            label: ctx => [`  ${xInd}: ${IS_RATE.has(xInd)?ctx.raw.x.toFixed(2):ctx.raw.x.toFixed(1)+'%'}`, `  ${yInd}: ${IS_RATE.has(yInd)?ctx.raw.y.toFixed(2):ctx.raw.y.toFixed(1)+'%'}`]
+          },
+          backgroundColor: '#1e2d3d', titleColor: '#f8f5ef', bodyColor: '#c8d8e8',
+          padding: 10, cornerRadius: 8, bodyFont: { family: 'JetBrains Mono', size: 13 }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: xInd, color: '#6b7b8d', font: { size: 13, family: 'Outfit' } },
+          grid: { color: 'rgba(15,25,35,0.06)' },
+          ticks: { color: '#6b7b8d', font: { size: 12, family: 'Outfit' } }
+        },
+        y: {
+          title: { display: true, text: yInd, color: '#6b7b8d', font: { size: 13, family: 'Outfit' } },
+          grid: { color: 'rgba(15,25,35,0.06)' },
+          ticks: { color: '#6b7b8d', font: { size: 12, family: 'Outfit' } }
+        }
+      },
+      animation: { duration: 500 }
+    }
+  });
+}
+
+/* ══ 5. PIE CHART ══ */
+function buildPie() {
+  const valid = getValid();
+  const mn = Math.min(...valid.map(s=>s[currentInd]));
+  const mx = Math.max(...valid.map(s=>s[currentInd]));
+  const lb = LOWER_BETTER.has(currentInd);
+
+  const tiers = { best: [], mid: [], worst: [] };
+  valid.forEach(s => {
+    const norm = (s[currentInd]-mn)/(mx-mn||1);
+    const bad = lb ? norm : 1-norm;
+    if (bad < 0.33) tiers.best.push(s);
+    else if (bad < 0.66) tiers.mid.push(s);
+    else tiers.worst.push(s);
+  });
+
+  const labels  = ['Best performing', 'Mid tier', 'Needs attention'];
+  const counts  = [tiers.best.length, tiers.mid.length, tiers.worst.length];
+  const stateGroups = [tiers.best, tiers.mid, tiers.worst];
+
+  if (charts.pie) { try { charts.pie.destroy(); } catch(e){} }
+  const ctx = document.getElementById('pieChart');
+  charts.pie = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels,
+      datasets: [{
+        data: counts,
+        backgroundColor: PIE_COLORS.map(c => c + 'cc'),
+        borderColor: '#fff',
+        borderWidth: 3,
+        hoverOffset: 10,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `  ${ctx.label}: ${ctx.raw} states`,
+            afterLabel: ctx => {
+              const g = stateGroups[ctx.dataIndex];
+              return '  ' + g.map(s=>s.state).join(', ');
+            }
+          },
+          backgroundColor: '#1e2d3d', titleColor: '#f8f5ef', bodyColor: '#c8d8e8',
+          padding: 12, cornerRadius: 10, bodyFont: { family: 'Outfit', size: 13 }
+        }
+      },
+      animation: { duration: 700, easing: 'easeOutQuart' }
+    }
+  });
+
+  // Custom legend
+  const total = counts.reduce((a,b)=>a+b,0);
+  document.getElementById('pie-legend').innerHTML = labels.map((lbl,i) => {
+    const pct = total ? ((counts[i]/total)*100).toFixed(0) : 0;
+    const eg = stateGroups[i].slice(0,3).map(s=>s.state).join(', ') + (stateGroups[i].length>3?'…':'');
+    return `<div class="pie-leg-item">
+      <div class="pie-leg-dot" style="background:${PIE_COLORS[i]}"></div>
+      <div style="flex:1;">
+        <div class="pie-leg-name">${lbl}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px;">${eg}</div>
+      </div>
+      <span class="pie-leg-val">${counts[i]}</span>
+      <span class="pie-leg-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+/* ══ SCATTER SELECTS POPULATE ══ */
+function populateScatterSelects() {
+  const opts = ALL_INDS.map(ind => `<option value="${ind}">${ind}</option>`).join('');
+  document.getElementById('sc-x').innerHTML = opts;
+  document.getElementById('sc-y').innerHTML = opts;
+  document.getElementById('sc-x').value = 'Child Stunting %';
+  document.getElementById('sc-y').value = 'Women Literacy %';
+}
+
+/* ══ MAIN UPDATE ══ */
+function updateAll() {
+  updateStats();
+  destroyAll();
+  buildBar();
+  buildLine();
+  buildColumn();
+  buildScatter();
+  buildPie();
+}
+
+function onIndicatorChange() {
+  currentInd = document.getElementById('ind-select').value;
+  updateAll();
+}
+
+/* ══ INIT ══ */
+populateScatterSelects();
+updateAll();
+</script>
+</body>
+</html>
